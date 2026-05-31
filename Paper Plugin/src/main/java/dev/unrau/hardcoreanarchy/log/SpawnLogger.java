@@ -18,16 +18,19 @@ public class SpawnLogger {
     private final File logFile;
     private final boolean enabled;
 
+    private static final String CSV_HEADER = "timestamp,reason,uuid,player,world,x,y,z";
+
     public SpawnLogger(JavaPlugin plugin, boolean enabled) {
         this.plugin = plugin;
         this.enabled = enabled;
-        this.logFile = new File(plugin.getDataFolder(), "exile-log.txt");
+        this.logFile = new File(plugin.getDataFolder(), "exile-log.csv");
     }
 
     public void log(Reason reason, UUID uuid, String playerName, String world, double x, double y, double z) {
         if (!enabled) return;
 
-        String line = String.format("%s | %-13s | uuid=%s | player=%s | world=%s | x=%d | y=%d | z=%d",
+        boolean writeHeader = !logFile.exists();
+        String line = String.format("%s,%s,%s,%s,%s,%d,%d,%d",
             Instant.now().toString(),
             reason.name(),
             uuid.toString(),
@@ -40,10 +43,14 @@ public class SpawnLogger {
 
         // Append synchronously — this is called from the main server thread
         try (BufferedWriter writer = new BufferedWriter(new FileWriter(logFile, true))) {
+            if (writeHeader) {
+                writer.write(CSV_HEADER);
+                writer.newLine();
+            }
             writer.write(line);
             writer.newLine();
         } catch (IOException e) {
-            plugin.getLogger().log(Level.WARNING, "Failed to write to exile-log.txt", e);
+            plugin.getLogger().log(Level.WARNING, "Failed to write to exile-log.csv", e);
         }
     }
 }

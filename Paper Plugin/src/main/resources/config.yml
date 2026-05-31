@@ -19,7 +19,7 @@ avoidLava: true
 # How many candidate locations to try before giving up (uses best fallback)
 maxSafeSpawnAttempts: 64
 
-# Log all spawn/death/exile events to exile-log.txt
+# Log all spawn/death/exile events to exile-log.csv
 logSpawnLocations: true
 
 # Ender chest behaviour on death
