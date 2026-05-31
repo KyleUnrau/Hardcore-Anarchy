@@ -1,0 +1,9 @@
+{
+  "permissions": {
+    "allow": [
+      "PowerShell(winget --version 2>&1; \\(Get-Command choco -ErrorAction SilentlyContinue\\).Source; \\(Get-Command scoop -ErrorAction SilentlyContinue\\).Source)",
+      "Bash(Get-ChildItem -Path \"c:\\\\Local Storage\\\\Repositories\\\\Gaming\\\\Hardcore-Anarchy\\\\Paper Plugin\" -Recurse -Force)",
+      "Bash(Select-Object FullName)"
+    ]
+  }
+}

@@ -1,0 +1,18 @@
+name: HardcoreAnarchy
+version: '${project.version}'
+main: dev.unrau.hardcoreanarchy.HardcoreAnarchyPlugin
+api-version: '1.21'
+description: Death exiles you. Ender chests are not vaults.
+authors:
+  - kyle
+
+commands:
+  hea:
+    description: Hardcore Exile Anarchy admin commands
+    usage: /hea <reload|version|debugspawn>
+    permission: hardcoreanarchy.admin
+
+permissions:
+  hardcoreanarchy.admin:
+    description: Access to /hea admin commands
+    default: op

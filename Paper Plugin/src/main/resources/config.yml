@@ -1,0 +1,38 @@
+# The name of the overworld used for exile spawning
+worldName: world
+
+# First join: random location between these distances from 0,0 (blocks)
+firstJoinMinDistanceFromZero: 50000
+firstJoinMaxDistanceFromZero: 500000
+
+# Death respawn: random location within this ring from 0,0
+deathRespawnMinDistanceFromZero: 250000
+deathRespawnMaxDistanceFromZero: 5000000
+
+# Death respawn: also at least this far from the death location
+deathRespawnMinDistanceFromDeath: 500000
+
+# Terrain safety filters
+avoidOcean: true
+avoidLava: true
+
+# How many candidate locations to try before giving up (uses best fallback)
+maxSafeSpawnAttempts: 64
+
+# Log all spawn/death/exile events to exile-log.txt
+logSpawnLocations: true
+
+# Ender chest behaviour on death
+clearEnderChestOnDeath: true
+dropEnderChestContentsOnDeath: true
+
+# Prevent beds and respawn anchors from binding respawn
+disableBedRespawn: true
+disableRespawnAnchorRespawn: true
+
+# Player-facing messages (use & for color codes, e.g. &cDeath has scattered you.)
+messages:
+  deathScattered: "Death has scattered you."
+  calculatingExile: "Calculating your exile location..."
+  bedsDoNotBind: "Beds do not bind you in this world."
+  anchorsDoNotBind: "Anchors do not bind you in this world."
