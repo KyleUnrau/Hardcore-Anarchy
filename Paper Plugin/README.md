@@ -36,7 +36,7 @@ Players can read all of this in game with `/help` — see [What players are told
 ## Installation
 
 1. Build the jar: `mvn package`
-2. Copy `target/samsara-2.7.2.jar` into your server's `plugins/` folder.
+2. Copy `target/samsara-2.7.3.jar` into your server's `plugins/` folder.
 3. Start the server. A default `config.yml` is generated automatically.
 
 ## Configuration
