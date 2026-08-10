@@ -31,11 +31,11 @@ import java.util.concurrent.TimeoutException;
  *
  * <p>So the work moves in front of the join. Minecraft asks the server twice where a player goes: the
  * login handshake happens on its own thread, off the main thread, before the player exists — which is
- * a thread that can afford to wait — and the spawn position is asked for once more, synchronously,
- * before the player is added to the world and before a single chunk is sent. This class does the
- * search and the chunk loading during the first, and has an answer ready for the second. The player's
- * client shows its ordinary "Logging in" screen for however long that takes, and the first terrain
- * they are ever sent is the terrain they are going to be standing on.
+ * a thread that can afford to wait — and the spawn position is asked for once more while that same
+ * connection is being configured, before the player is built and before a single chunk is sent. This
+ * class does the search and the chunk loading during the first, and has an answer ready for the
+ * second. The player's client shows its ordinary "Logging in" screen for however long that takes,
+ * and the first terrain they are ever sent is the terrain they are going to be standing on.
  *
  * <p>Nothing here is load-bearing. Every failure — no world, a search that will not resolve, a
  * timeout, a shutdown mid-login — simply prepares nothing, and the join falls back to the old

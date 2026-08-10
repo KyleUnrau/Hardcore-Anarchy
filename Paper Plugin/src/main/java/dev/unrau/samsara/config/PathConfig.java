@@ -93,8 +93,8 @@ public class PathConfig {
         return new PathConfig(enabled, 5, DEFAULT_PATH_NAME, 120,
             "",
             "",
-            "%player%'s incarnation here ends.",
-            "%player% enters an incarnation.");
+            "&e%player%'s left their path",
+            "&e%player% entered their path");
     }
 
     /**

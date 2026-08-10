@@ -160,8 +160,8 @@ paths:
   messages:
     join: ""                                         # vanilla's, by default
     quit: ""                                         # vanilla's, by default
-    departure: "%player%'s incarnation here ends."   # where they were
-    arrival: "%player% enters an incarnation."       # where they now are
+    departure: "&e%player%'s left their path"        # where they were
+    arrival: "&e%player% entered their path"         # where they now are
 ```
 
 `%player%` and `%path%` are substituted; `&` colour codes work. All four go through the same

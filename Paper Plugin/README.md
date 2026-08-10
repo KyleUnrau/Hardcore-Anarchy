@@ -1,6 +1,6 @@
 # Samsara
 
-The Paper plugin behind Samsara, a Minecraft 1.21.4 server where death is exile rather than a
+The Paper plugin behind Samsara, a Minecraft 26.2 server where death is exile rather than a
 respawn. The world persists — your position does not.
 
 The plugin and the server share one name. The jar is `samsara`, it installs to `plugins/Samsara/`,
@@ -30,13 +30,13 @@ Players can read all of this in game with `/help` — see [What players are told
 
 ## Requirements
 
-- Paper 1.21.4 or newer
-- Java 21
+- Paper 26.2 or newer
+- Java 25
 
 ## Installation
 
 1. Build the jar: `mvn package`
-2. Copy `target/samsara-2.7.1.jar` into your server's `plugins/` folder.
+2. Copy `target/samsara-2.7.2.jar` into your server's `plugins/` folder.
 3. Start the server. A default `config.yml` is generated automatically.
 
 ## Configuration
@@ -99,8 +99,8 @@ paths:
   messages:
     join: ""    # empty leaves connecting and disconnecting to vanilla, translations included
     quit: ""
-    departure: "%player%'s incarnation here ends."
-    arrival: "%player% enters an incarnation."
+    departure: "&e%player%'s left their path"
+    arrival: "&e%player% entered their path"
 
 # How far the End portal activation roar carries, in blocks (0 silences it)
 endPortal:

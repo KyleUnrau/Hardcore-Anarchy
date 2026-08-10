@@ -5,7 +5,7 @@ import dev.unrau.samsara.social.SocialService;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.NamedTextColor;
 import org.bukkit.Bukkit;
-import org.bukkit.GameRule;
+import org.bukkit.GameRules;
 import org.bukkit.Location;
 import org.bukkit.entity.AnimalTamer;
 import org.bukkit.entity.Entity;
@@ -63,7 +63,7 @@ public class PetDeathListener implements Listener {
         // A server that has switched death messages off has switched them off. Vanilla will not have
         // told the owner either, and this is not the place to overrule that.
         Location where = entity.getLocation();
-        if (!Boolean.TRUE.equals(where.getWorld().getGameRuleValue(GameRule.SHOW_DEATH_MESSAGES))) return;
+        if (!Boolean.TRUE.equals(where.getWorld().getGameRuleValue(GameRules.SHOW_DEATH_MESSAGES))) return;
 
         UUID ownerId = owner.getUniqueId();
         Component message = deathMessage(entity).color(NamedTextColor.GRAY);

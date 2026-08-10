@@ -1,13 +1,15 @@
 package dev.unrau.samsara.listener;
 
 import dev.unrau.samsara.service.ArrivalPreparation;
+import io.papermc.paper.event.player.AsyncPlayerSpawnLocationEvent;
 import org.bukkit.Location;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
 import org.bukkit.event.player.AsyncPlayerPreLoginEvent;
 import org.bukkit.event.player.PlayerQuitEvent;
-import org.spigotmc.event.player.PlayerSpawnLocationEvent;
+
+import java.util.UUID;
 
 /**
  * Puts a player in the right place from the first frame they are shown.
@@ -20,9 +22,10 @@ import org.spigotmc.event.player.PlayerSpawnLocationEvent;
  *       This is where {@link ArrivalPreparation} does the searching and the chunk loading, and it can
  *       take as long as it needs to — the client is sitting on its own "Logging in" screen, which is
  *       exactly what that screen is for.</li>
- *   <li>The spawn position, on the main thread, after the player object exists and before a single
- *       chunk has been sent to them. Whatever is set here <em>is</em> where they appear: there is no
- *       teleport, no correction, and no moment at which they were somewhere else.</li>
+ *   <li>The spawn position, asked of the connection while it is still being configured — before the
+ *       player object is built and before a single chunk has been sent. Whatever is set here
+ *       <em>is</em> where they appear: there is no teleport, no correction, and no moment at which
+ *       they were somewhere else.</li>
  * </ol>
  *
  * <p>Neither half decides anything. If nothing was prepared — the feature is off, the search timed
@@ -51,10 +54,18 @@ public class ArrivalListener implements Listener {
      * Runs last, so this is the answer the server acts on. What it replaces is the world spawn — the
      * one place this plugin exists to keep people away from, and the place vanilla puts everybody
      * whose player file does not already name somewhere else.
+     *
+     * <p>There is no player here to ask, only the connection being configured, which is the whole
+     * reason to prefer this event: the player is built <em>after</em> this answer rather than being
+     * brought into existence early to receive it. The profile on the connection carries the same id
+     * the handshake prepared against, so a placement is looked up exactly as before.
      */
     @EventHandler(priority = EventPriority.HIGHEST)
-    public void onSpawnLocation(PlayerSpawnLocationEvent event) {
-        Location prepared = arrival.claim(event.getPlayer().getUniqueId());
+    public void onSpawnLocation(AsyncPlayerSpawnLocationEvent event) {
+        UUID uuid = event.getConnection().getProfile().getId();
+        if (uuid == null) return;
+
+        Location prepared = arrival.claim(uuid);
         if (prepared != null) {
             event.setSpawnLocation(prepared);
         }
