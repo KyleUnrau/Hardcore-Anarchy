@@ -1,18 +1,50 @@
-name: HardcoreAnarchy
+name: Samsara
 version: '${project.version}'
-main: dev.unrau.hardcoreanarchy.HardcoreAnarchyPlugin
+main: dev.unrau.samsara.SamsaraPlugin
 api-version: '1.21'
-description: Death exiles you. Ender chests are not vaults.
+description: The world remembers. You do not.
 authors:
-  - kyle
+  - Kyle R. Unrau
 
 commands:
-  hea:
-    description: Hardcore Exile Anarchy admin commands
-    usage: /hea <reload|version|debugspawn>
-    permission: hardcoreanarchy.admin
+  samsara:
+    description: Samsara admin commands
+    usage: /samsara <reload|version|debugspawn|expedition|map|wormholes|endrecover|social|paths>
+    permission: samsara.admin
+  path:
+    description: The separate existences you keep, and how to move between them
+    usage: /path [switch|new|accept|decline|rename|abandon]
+    aliases: [paths]
+  contact:
+    description: People you stay visible to at any distance
+    usage: /contact <add|accept|decline|remove|list|requests|auto> [player]
+    aliases: [contacts]
+  # /msg, /tell, /w and /whisper are the server's own commands and are registered before any plugin
+  # loads, so these aliases do not displace them. SocialCommandListener intercepts the typed line
+  # instead — without it, /ignore could be walked around by spelling the command differently. What
+  # this declaration buys is the usage line, the tab completer and a /samsara:msg that always works.
+  msg:
+    description: Send a private message
+    usage: /msg <player> <message>
+    aliases: [tell, whisper, w, pm]
+  reply:
+    description: Answer whoever last messaged you
+    usage: /reply <message>
+    aliases: [r]
+  ignore:
+    description: Stop seeing another player entirely
+    usage: /ignore <player|list>
+  unignore:
+    description: Undo an ignore
+    usage: /unignore <player>
 
 permissions:
-  hardcoreanarchy.admin:
-    description: Access to /hea admin commands
+  samsara.admin:
+    description: Access to /samsara admin commands
+    default: op
+  samsara.social.observe:
+    description: Receive proximity-scoped chat, deaths and announcements from any distance
+    default: op
+  samsara.social.unlimited:
+    description: Exempt from the private message anti-spam rules
     default: op

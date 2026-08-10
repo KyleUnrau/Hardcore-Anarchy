@@ -1,16 +1,37 @@
 # The name of the overworld used for exile spawning
 worldName: world
 
-# First join: random location between these distances from 0,0 (blocks)
-firstJoinMinDistanceFromZero: 50000
-firstJoinMaxDistanceFromZero: 500000
+# How the distances below are measured from 0,0:
+#   square — per axis, as max(|x|, |z|). A max of 29000000 fills the entire square out to the
+#            corners, which is what you want if the max is meant to be the map itself.
+#   circle — as a radius. A max of 29000000 is a circle of that radius, so the corners of the
+#            map are never used: nobody is placed at 29000000,29000000 (a radius of ~41m).
+#
+# Square by default, because the world is square. With the defaults below, a new life can begin
+# almost anywhere the world will generate, and no part of the map is favoured.
+spawnAreaShape: square
 
-# Death respawn: random location within this ring from 0,0
-deathRespawnMinDistanceFromZero: 250000
-deathRespawnMaxDistanceFromZero: 5000000
+# The band new lives are placed in, in blocks from 0,0. Applies to first join and to every
+# death respawn alike: a new life is a new life however it began.
+#
+# The maximum stops a million blocks short of the world's own 29999984 limit. That last million
+# is where the terrain generator's arithmetic starts to fray, and a life that begins out there
+# begins somewhere subtly wrong; the band given up is one nobody will ever notice is missing.
+# Raise it to 30000000 for literally the whole map, or raise the minimum if there is something
+# at the centre worth keeping people away from.
+#
+# (These were called deathRespawnMinDistanceFromZero and deathRespawnMaxDistanceFromZero. The
+# old names are still read if the new ones are absent, so an existing config keeps working.)
+spawnMinDistanceFromZero: 0
+spawnMaxDistanceFromZero: 29000000
 
-# Death respawn: also at least this far from the death location
+# Death respawn: also at least this far from the death location. Ignored on first join, and
+# dropped automatically if it turns out to be unsatisfiable.
 deathRespawnMinDistanceFromDeath: 500000
+
+# Never place anyone outside the world border. The maximum above is narrowed to fit when the
+# border is smaller than it. The world's own 30,000,000 block limit applies either way.
+respectWorldBorder: true
 
 # Terrain safety filters
 avoidOcean: true
@@ -19,20 +40,445 @@ avoidLava: true
 # How many candidate locations to try before giving up (uses best fallback)
 maxSafeSpawnAttempts: 64
 
-# Log all spawn/death/exile events to exile-log.csv
-logSpawnLocations: true
+# Arriving in the world.
+#
+# Minecraft asks the server where a player goes twice: once during the login handshake, on its own
+# thread, before the player exists — and once more, on the main thread, immediately before they are
+# added to the world and before a single chunk is sent to them. With this on, the exile search and
+# the chunk loading happen during the first, and the answer is ready for the second.
+#
+# What that removes is the flash of the world spawn. Without it a new player is placed at 0,0 by the
+# server, is sent the chunks around it, renders them — and is only then moved to the life that is
+# actually theirs, once the search comes back. Usually that is too quick to see. Sometimes it is not,
+# and the first thing a new player sees on a server whose whole premise is that nobody shares a spawn
+# is everybody's spawn. It also means every player who ever joined has loaded and ticked the same
+# ground on their way through.
+#
+# Nothing here is load-bearing. A search that cannot be finished in time simply falls back to the old
+# behaviour of placing the player after they join — a slow search never costs anybody a login.
+arrival:
+  prepareBeforeJoin: true
 
-# Ender chest behaviour on death
-clearEnderChestOnDeath: true
-dropEnderChestContentsOnDeath: true
+  # How long the login may wait for an exile and its terrain. The player's client shows its ordinary
+  # "Logging in" screen for this long at worst, and past it the join goes ahead and the placement
+  # happens afterwards.
+  timeoutSeconds: 20
 
-# Prevent beds and respawn anchors from binding respawn
-disableBedRespawn: true
-disableRespawnAnchorRespawn: true
+  # How much ground around the arrival to have generated before the player is put down, in blocks.
+  # The search itself only guarantees the column it chose; this is what makes the first frame they
+  # are shown a finished one. Everything past it streams in the way it does anywhere else.
+  preloadRadius: 48
 
-# Player-facing messages (use & for color codes, e.g. &cDeath has scattered you.)
-messages:
-  deathScattered: "Death has scattered you."
-  calculatingExile: "Calculating your exile location..."
-  bedsDoNotBind: "Beds do not bind you in this world."
-  anchorsDoNotBind: "Anchors do not bind you in this world."
+# Each player's history: first join, death, exile, and every crossing in or out of the End.
+#
+# It is kept on the player it happened to, in plugins/Samsara/playerdata/<uuid>.json under
+# "journal", alongside everything else that player's record holds. There is no server-wide log
+# file: one player's history is read by opening one player's file, and deleting a player takes
+# their history with them.
+#
+# An exile-log.csv left by an older version is read once at startup, handed back to the players
+# its rows name, and renamed to exile-log.csv.imported. Nothing writes to it after that.
+journal:
+  enabled: true
+
+  # How many entries each player keeps. The oldest are dropped once the count is exceeded, so a
+  # long-lived player's file settles at a size instead of growing forever. 0 keeps everything.
+  maxEntries: 200
+
+# Ender chest behaviour on death. When true, the contents drop at the death location and the
+# vault is emptied — the items survive as loot on the ground, but they do not follow the player
+# into their next life. When false the Ender chest is left untouched.
+dropEnderChestOnDeath: true
+
+# Paths: the separate existences one account may keep.
+#
+# The problem this solves is crude and common. A player who wants to live somewhere else in the
+# world — near a friend, in another biome, as somebody with nothing — has exactly one way to do it
+# on an ordinary server: buy a second Microsoft account. That is a bad answer, it costs money, and
+# it produces a second player the server has to treat as a stranger.
+#
+# A path is that second existence, held properly. Each one has its own position, its own inventory,
+# its own ender chest, its own experience, its own condition and its own history, and only one of
+# them is being lived at a time. Switching saves the one you are in and restores the one you are
+# going to, which is as close as this gets to logging out of yourself.
+#
+# What a path is NOT is a life. Dying ends the life; the path survives it, keeps its name, and
+# receives the next one — exiled to the far side of the world exactly as it always was. There is no
+# custom death screen, no menu and no spectator limbo: you die the way you died before paths
+# existed, and you wake up on the same path you were walking. A path is the branch; the lives happen
+# along it, one after another.
+#
+# The limit is the design. Five existences is a real choice about beginning a sixth; fifty is a
+# stable of characters with no stake in any of them. Abandoning one frees its slot, and is settled
+# like a death: everything it was carrying falls into the world where it stood, for anybody at all
+# to find. Nothing crosses between paths, ever — a way to abandon an existence and keep its pockets
+# would be a free courier service for shulker boxes.
+paths:
+  enabled: true
+
+  # How many paths one account may hold at once, the one being walked included.
+  max: 5
+
+  # What a player's first path is called before they rename it. Everybody who played here before
+  # paths existed is already walking this one, with everything they own still in it.
+  defaultName: Original
+
+  # Beginning a path with other people.
+  #
+  # /path new <name> <player...> asks them; nothing at all happens until every one of them has
+  # agreed, and then all of them are put down together at one newly chosen location — the only
+  # place on this server where two players start in the same square metre. Their paths are separate
+  # from that moment on. Nobody gives up an existing path to do it.
+  #
+  # How long the offer waits for the last answer, in seconds.
+  invitationTimeoutSeconds: 120
+
+  # What the server says when somebody arrives in an existence or steps out of one.
+  #
+  # There are three of these events and vanilla only knows about two. A player can connect, can
+  # disconnect, or can do neither and simply go to live somewhere else as somebody else — and it is
+  # that third one the game has no words for at all.
+  #
+  #   %player%  their name
+  #   %path%    the name of the path — theirs, and private unless you put it in these lines
+  #
+  # 'join' and 'quit' are empty by default, which leaves those two to vanilla. That is deliberate:
+  # vanilla writes them as translatable components, so a client set to French reads them in French,
+  # and a template here is a string in whatever language you wrote it. Connecting and disconnecting
+  # are the two things the game already announces correctly, so they are left alone. Fill these in
+  # if you would rather have the wording than the translations.
+  #
+  # 'departure' and 'arrival' are different: nothing in the game announces a player becoming
+  # somebody else, so there is nothing to fall back to and an empty line here means silence.
+  #
+  # '&' colour codes work.
+  messages:
+    join: ""
+    quit: ""
+    departure: "%player%'s incarnation here ends."
+    arrival: "%player% enters an incarnation."
+
+# Who can see whom.
+#
+# Vanilla treats the player list as one room. Everybody hears everybody, wherever they are, which on
+# a map where lives begin hundreds of thousands of blocks apart makes the chat box the one place the
+# distance does not exist. This puts it back.
+#
+# The hierarchy, top to bottom:
+#
+#   - players near each other see each other's chat, joins, leaves, deaths and advancements, much as
+#     they would in vanilla;
+#   - two players who spend real time together can become contacts, if both of them allow it;
+#   - a contact can also be asked for directly, and has to be accepted;
+#   - contacts see each other at any distance, and keep doing so through logout, death and exile;
+#   - either of them can end it, unilaterally, and ending it stops proximity quietly rebuilding it;
+#   - /ignore beats all of the above, in the ignoring player's favour;
+#   - /msg crosses any distance, and is still subject to /ignore.
+#
+# A contact is visibility and nothing else. It carries no coordinates, no tracking, no inventory, no
+# teleport. It is the difference between hearing somebody and finding them.
+social:
+  enabled: true
+
+  # How far the ordinary events carry, in blocks. Comfortably past render distance: you can hear the
+  # people whose chimneys you cannot see, and nothing from the next valley.
+  #
+  # 0 switches proximity off entirely, leaving contacts as the only way to see anybody. A radius
+  # large enough to span the world gives vanilla's single shared room back.
+  #
+  # Different worlds are never near each other, whatever this says. A Nether coordinate is eight
+  # times smaller than the Overworld one above it and an End coordinate is a reflection of one;
+  # there is no distance between them that would mean anything.
+  radius: 256
+
+  # Per-event overrides, if one of them should carry further than small talk. Each defaults to the
+  # radius above, and the whole section can be deleted.
+  radii:
+    chat: 256
+    join: 256
+    quit: 256
+    death: 256
+    advancement: 256
+
+  contacts:
+    enabled: true
+
+    # How many contacts one player may hold.
+    max: 100
+
+    # How long a request waits for an answer, and how long a refusal closes the door for. The second
+    # one is what stops "no" costing one keystroke to give and nothing to ignore.
+    requestExpirySeconds: 300
+    requestCooldownSeconds: 300
+
+    # Contacts that form on their own, out of time spent together.
+    #
+    # Both players must have this on, and it is on by default: what it costs the pair is that they
+    # stop being hidden from each other by distance, which an evening spent working side by side has
+    # already stopped being true of. /contacts auto off is one command, and both the contacts list
+    # and the help text say so. Set defaultOn to false for the stricter reading, where being willing
+    # to end up permanently visible to your neighbours is something each player states first.
+    auto:
+      enabled: true
+      defaultOn: true
+
+      # Nearness is scored, not timed, and the two radii are what the score is made of.
+      #
+      # Inside closeRadius a second beside somebody is worth a second: you are in the same room. From
+      # there it tapers to nothing at radius, so a pair at opposite ends of a field build a score
+      # slowly and a pair who merely share a wide circle build one barely at all. That is what lets
+      # the radius be generous without the threshold coming to mean "in the same area code".
+      radius: 48
+      closeRadius: 16
+
+      # How much scored nearness the contact needs, in minutes — where a minute means a minute spent
+      # inside closeRadius. Not consecutive: an evening of coming and going adds up, because the
+      # score is a running total rather than a stopwatch that resets.
+      requiredMinutes: 20
+
+      # Score lost per second apart, as a fraction of the rate it is earned at touching distance. A
+      # quarter means four seconds apart undoes one second together: an evening spent building
+      # something with somebody comfortably survives the next day, and an afternoon of walking past
+      # each other at spawn is gone by the evening. 0 turns the fading off and leaves only the
+      # backstop below.
+      decayRate: 0.25
+
+      # How often to look. Every five seconds by default; the cost is one pass over the players who
+      # have this switched on, bucketed by position, not a comparison of everybody to everybody.
+      sampleIntervalTicks: 100
+
+      # The backstop under the decay: a pair who have not been near each other for this long start
+      # again from nothing rather than from whatever the fading had left. It is what keeps this file
+      # honest on a server that has set decayRate to 0.
+      forgetAfterMinutes: 180
+
+  # Private messages. These cross any distance — an addressed message is not the noise proximity
+  # chat was solving — and are still refused by /ignore, absolutely.
+  messages:
+    enabled: true
+
+    # Anti-spam by shape rather than by cooldown. A flat cooldown costs a spammer a sleep in a loop
+    # and costs everybody else a conversation, so what is counted here is reaching for one stranger
+    # after another, and handing the same line round. Messages to contacts are exempt from both:
+    # a relationship both players agreed to is a conversation, not a broadcast.
+    #
+    # What still applies to everybody is the crude flood ceiling, which describes a macro rather
+    # than a person.
+    minIntervalMillis: 200
+    windowSeconds: 60
+    maxUniqueRecipientsPerWindow: 6
+    maxDuplicateRecipients: 3
+    maxMessagesPerWindow: 40
+
+  # Tamed animals.
+  #
+  # Vanilla tells the owner, wherever they are, and tells nobody else. That is left exactly as it is.
+  # What is added is the other half: whoever was standing there watched it happen, so they are told
+  # too — and nobody else, not the server and not the owner's contacts. Blocking somebody blocks
+  # their animals with them.
+  pets:
+    enabled: true
+    radius: 64
+
+    # Say it to the owner as well. Off, because the game has already said it and twice is worse
+    # than once.
+    tellOwner: false
+
+  # How often the progress towards an automatic contact is written to disk. Contacts themselves are
+  # written the moment they are made and do not wait for this.
+  saveIntervalSeconds: 300
+
+# What the server calls itself, and what it tells a player who asks.
+#
+# Nothing in this section changes a rule. It changes only what players are told about the rules
+# that already exist, so a server can be renamed — or go completely silent — without any of the
+# mechanics below noticing.
+#
+# All of it goes to /help. The server list entry is not this plugin's business: the motd comes from
+# server.properties, exactly as it would if this plugin were not installed.
+presentation:
+  # The server's name. This is a name, not a description: the tagline says what the server is.
+  # It titles the /help landing page, and it names the help topic that describes the server, so
+  # /help <name> is how a player reads it.
+  name: Samsara
+
+  # The line beneath the name on that page. Leave it blank to open on the name alone.
+  tagline: The world remembers. You do not.
+
+  # /help.
+  #
+  # Paper's own help is left intact under both of these settings: the command index, every command's
+  # usage page, /help <page>, and /help <command> all behave exactly as they do on a server without
+  # this plugin. What is added is the server itself as a subject you can look up.
+  help:
+    # Register the server's help topics — the server's own name, plus rules, death, respawn,
+    # end and strongholds — so /help <topic> opens each one and all of them appear in the
+    # ordinary /help index above the commands.
+    #
+    # Topics are registered once, while the server is starting, because the help map will not
+    # accept a second topic under a name it already holds. Their text is read fresh every time a
+    # player opens one, so /samsara reload does update what they say; only renaming the server needs a
+    # restart before /help answers to the new name.
+    topics: true
+
+    # A bare /help opens a short page about the server rather than page one of the command index.
+    # Every other form is untouched — /help 1 is still the command index, and the landing page says
+    # so on its last line.
+    landingPage: true
+
+# Lighting an End portal.
+#
+# Vanilla plays the activation roar as a global event: every player on the server hears it at full
+# volume, in every dimension, however far away they are. On a map where nobody shares a front door
+# that is the wrong announcement — it tells everyone that somebody, somewhere, found a stronghold.
+#
+# Here it is an ordinary sound at the portal instead. Nothing else about lighting a portal changes:
+# the eyes, the frame, the click of each one going in and the portal itself are all as they were.
+endPortal:
+  # How far the activation roar carries, in blocks. 0 silences it entirely; 16 is exactly as loud
+  # as any other block sound. Values above 16 reach further without being louder up close.
+  activationSoundRadius: 64
+
+# End travel.
+#
+# Overworld <-> Nether is vanilla in both directions and is not touched by this plugin at all.
+# The End is the part that has to change, because vanilla funnels every End portal in the world
+# onto one island at End 0,0 — a shared front door on a server built to have none.
+#
+#   Overworld -> End       (x, z) -> (-z, -x)    a reflection: signs inverted and axes swapped
+#   End       -> Overworld (x, z) -> (-z, -x)    exactly the same rule, so it is its own inverse
+#
+# Because the rule undoes itself, the gateway on the platform you arrive at leads back to the
+# portal you stepped into, and nothing has to be written down for that to keep being true.
+#
+# Getting around inside the End is done with wormholes: every End gateway that is not one of
+# those ways home — the plugin's grid, and the End's own gateways — throws you to a partner cell
+# somewhere else in the End, and the gateway there brings you back. Pairings are computed, not
+# stored, and are exactly two-way by construction.
+#
+# The one rule that shapes everything: a wormhole never reaches the Overworld. Leaving the End
+# means finding a platform somebody made by lighting an End portal.
+#
+# This is travel within one life. It never uses a bed, a respawn anchor, a world spawn or an
+# exile. Only death begins exile.
+dimensionalTravel:
+  enabled: true
+
+  # Worlds involved. overworldName defaults to worldName above.
+  endWorldName: world_the_end
+
+  # Grid the End arrival point is snapped to. Small values keep the reflection close to exact;
+  # 1 disables snapping entirely. This is NOT what keeps one portal to one platform — the portal's
+  # own centre is found first, whichever of its nine blocks you stepped on — so raising it buys
+  # nothing and only pushes the way home further from the portal it belongs to.
+  arrivalSiteSpacing: 16
+
+  # The way home: a (2 * radius + 1) square of end stone with a bedrock-framed doorway you walk
+  # straight through. Only built where an Overworld End portal reflects to — wormholes get no
+  # platform, only a vanilla End gateway (see wormholes.gatewayHeight below).
+  arrivalPlatformRadius: 3
+  # Height to build at where there is no ground: the platform's floor, and the top of the End island
+  # grown under a wormhole out in the void.
+  arrivalPlatformY: 64
+
+  # Build automatically. With this off the plugin only routes travellers to places that already have
+  # safe ground, and falls back to vanilla travel elsewhere.
+  buildArrivalSites: true
+
+  # Never build within this radius of End 0,0. Routing is not bent by this — an Overworld portal
+  # near 0,0 still reflects onto the central island — but the dragon arena is not paved over.
+  centralIslandProtectRadius: 1024
+
+  # The distributed wormhole grid. Without it a traveller who arrived by End portal would have to
+  # fly to the central island to find their first gateway. Nodes are built the first time a player
+  # comes near one, and their positions are a pure function of the End's seed, so nothing is stored.
+  #
+  # The End is divided into cells of `spacing` blocks and each holds one gateway, placed by hashing
+  # the cell with the world seed rather than sitting at its centre. That scatter is the point: on a
+  # lattice, a player flying east along a row of nodes meets one every cell while a player flying
+  # east between two rows meets none however far they go. Scattered, every heading samples the same
+  # spread, so a few cells of exploring is usually enough to bring one into view.
+  #
+  #   spacing      blocks per cell — the mean distance between neighbouring gateways
+  #   separation   the closest two neighbouring gateways may come. It stops a pair landing together
+  #                against a shared cell edge, and the margin it leaves is why no gateway can land
+  #                on End 0,0 or on an axis. Keep it well under half the spacing: the margin is also
+  #                a band no gateway can occupy, and a course down the middle of one stays blind
+  #                until sight range passes half the separation (64 blocks at the default).
+  gateways:
+    enabled: true
+    spacing: 512
+    separation: 128
+    materialiseRadius: 192
+    scanIntervalTicks: 100
+
+  # Wormholes: what every End gateway that is not a way home does.
+  #
+  # A wormhole looks like nothing in particular, because it is a vanilla End gateway — the same
+  # twelve blocks of bedrock around one gateway block that the dragon leaves behind. Sealed above
+  # and below, open on all four sides: get in with a pearl or a trapdoor, exactly as in vanilla.
+  # The gateways the world generated are adopted into this network too, so none of them still lead
+  # to the outer islands.
+  #
+  # The network always spans the End's world border, so every gateway anywhere in the dimension
+  # comes back. (The old `reach` key, which could make it smaller, is retired: gateways past its
+  # edge all shared one destination and none of them led home again.)
+  #
+  #   cellSize       blocks per cell. Gateways in one cell share a destination, and every wormhole
+  #                  is built at its cell's centre so a round trip lands on the gateway it left.
+  #   gatewayHeight  blocks between the ground and the gateway floating above it (5 to 64). Where
+  #                  there is no ground, an End island is grown the way vanilla grows one.
+  #   seed           which of the astronomically many pairings this world uses. CHANGING THIS
+  #                  REPOINTS EVERY WORMHOLE IN THE END — anyone standing at a far end is not
+  #                  stranded, but the gateway they came through no longer goes back where it did.
+  wormholes:
+    enabled: true
+    cellSize: 16
+    gatewayHeight: 10
+    seed: 0
+
+  # Coming out of the End puts you back at your portal. An Overworld End portal is nearly always
+  # underground, so the reflected coordinate names the portal's column, not a place to stand — the
+  # plugin looks for the portal block in that column and sets you down beside it.
+  #
+  # This radius is the recovery path for when there is no portal there any more. It is how far to
+  # look for open ground around the reflected coordinate before giving up. World spawn is never
+  # used: in the worst case a traveller arrives at the coordinate they were promised.
+  returnSearchRadius: 16
+
+  # Portal cooldown applied after arriving in the End, where a traveller lands on a platform.
+  #
+  # It is deliberately NOT applied on the way back. A returning traveller stands beside their own
+  # End portal, and a cooldown there does not stop them walking into it — nothing does — it only
+  # stops the portal answering when they do. An End portal block is not solid, so a door that
+  # ignores you is a hole in the floor with a stronghold's lava under it. Re-entry loops are
+  # prevented by the in-flight journey claim instead, which cannot drop anybody through anything.
+  portalCooldownTicks: 100
+
+  # Cross the dimension boundary first, and work out where the traveller lands afterwards.
+  #
+  # Every destination here may be terrain that has never been generated, so there is always a wait.
+  # The only question is which side of the boundary it is spent on.
+  #
+  # With this on, the traveller is taken out of their own hands in the very tick the portal is
+  # cancelled — held still, unhurt and unable to fall or wander — and is then moved to the
+  # destination dimension as soon as the one chunk under their waiting position has loaded, while the
+  # rest of the area and the arrival site are still being built. Their client puts up its own loading
+  # screen for that, the real one, the End's starfield or the Overworld's, and takes it down when
+  # they are set down.
+  #
+  # With it off, they stay where they were until the destination is ready and cross in one teleport
+  # at the end. That is the older behaviour, and it has two costs. The transition the client should
+  # have shown arrives when there is nothing left to load, so it flashes past unseen. And an End
+  # portal block is not solid: cancelling the vanilla trip stops the transition but not the fall, so
+  # a traveller waiting out a slow journey is standing in a stronghold's portal room with lava under
+  # it. They are parked on the nearest ledge for the wait, which is a patch, not a fix.
+  #
+  # Wormholes are unaffected either way: both ends are in the End, so there is no boundary to cross.
+  immediateTransition: true
+
+  # Narrate travel to the console: every departure, arrival and routing decision. Off by default,
+  # because a busy End writes two lines per gateway per player and buries everything else. No
+  # history is lost either way — each journey is written to the traveller's own journal in their
+  # player data file. Failures are warnings and always appear, debug or not.
+  debug: false

@@ -5,12 +5,12 @@
     <modelVersion>4.0.0</modelVersion>
 
     <groupId>dev.unrau</groupId>
-    <artifactId>hardcore-anarchy</artifactId>
-    <version>1.0.2-SNAPSHOT</version>
+    <artifactId>samsara</artifactId>
+    <version>2.7.1</version>
     <packaging>jar</packaging>
 
-    <name>HardcoreAnarchy</name>
-    <description>Death exiles you. Ender chests are not vaults.</description>
+    <name>Samsara</name>
+    <description>The world remembers. You do not.</description>
 
     <properties>
         <maven.compiler.release>25</maven.compiler.release>
@@ -31,6 +31,30 @@
             <version>1.21.4-R0.1-SNAPSHOT</version>
             <scope>provided</scope>
         </dependency>
+        <!--
+            Player data is JSON. Gson is part of the server Paper hands us - paper-api depends on
+            it directly - so this is declared only to say out loud that we use it. It must stay
+            'provided': shading a second copy into the jar would put two Gsons on the classpath.
+        -->
+        <dependency>
+            <groupId>com.google.code.gson</groupId>
+            <artifactId>gson</artifactId>
+            <version>2.11.0</version>
+            <scope>provided</scope>
+            <exclusions>
+                <!-- Build-time annotations for Gson's own sources; nothing here reads them. -->
+                <exclusion>
+                    <groupId>com.google.errorprone</groupId>
+                    <artifactId>error_prone_annotations</artifactId>
+                </exclusion>
+            </exclusions>
+        </dependency>
+        <dependency>
+            <groupId>org.junit.jupiter</groupId>
+            <artifactId>junit-jupiter</artifactId>
+            <version>5.11.4</version>
+            <scope>test</scope>
+        </dependency>
     </dependencies>
 
     <build>
@@ -48,6 +72,11 @@
                 <configuration>
                     <release>25</release>
                 </configuration>
+            </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-surefire-plugin</artifactId>
+                <version>3.2.5</version>
             </plugin>
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>

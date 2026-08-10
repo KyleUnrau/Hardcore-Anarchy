@@ -1,15 +1,15 @@
-# Hardcore Exile
+# Samsara
 
 ## Overview
 
-Hardcore Exile is a Minecraft server project that seeks to reimagine Hardcore mode by preserving the permanence of the world while eliminating the permanence of player death.
+Samsara is a Minecraft server project that seeks to reimagine Hardcore mode by preserving the permanence of the world while eliminating the permanence of player death.
 
-In traditional Hardcore Minecraft, death removes a player from the game. In Hardcore Exile, death removes a player from their current life. The world, its history, its structures, its civilizations, and its conflicts remain. The player must begin again elsewhere and decide whether to rebuild, survive locally, or undertake the long journey back to what was lost.
+In traditional Hardcore Minecraft, death removes a player from the game. On Samsara, death removes a player from their current life. The world, its history, its structures, its civilizations, and its conflicts remain. The player must begin again elsewhere and decide whether to rebuild, survive locally, or undertake the long journey back to what was lost.
 
 The project consists of two primary components:
 
-* **Hardcore Exile Plugin** — Implements the gameplay mechanics and server rules.
-* **Hardcore Exile Resource Pack** — Provides the visual presentation and atmosphere that communicates the server's identity to players.
+* **Server Plugin** — Implements the gameplay mechanics and server rules.
+* **Resource Pack** — Provides the visual presentation and atmosphere that communicates the server's identity to players.
 
 Together, these components create a multiplayer experience focused on permanence, distance, exploration, survival, and the consequences of death.
 
@@ -17,7 +17,7 @@ Together, these components create a multiplayer experience focused on permanence
 
 # Design Philosophy
 
-The central principle of Hardcore Exile is:
+The central principle of Samsara is:
 
 > The world remembers. The player does not.
 
@@ -40,7 +40,7 @@ The goal is to create a world where:
 
 # Core Experience
 
-Hardcore Exile is intended to create a world that feels less like a game session and more like a persistent civilization.
+Samsara is intended to create a world that feels less like a game session and more like a persistent civilization.
 
 Players may:
 
@@ -60,7 +60,7 @@ The player loses because they have been separated from the world they built.
 
 # Relationship to Hardcore Minecraft
 
-Hardcore Exile is inspired by Hardcore Minecraft but is not intended to replicate vanilla Hardcore mechanics.
+Samsara is inspired by Hardcore Minecraft but is not intended to replicate vanilla Hardcore mechanics.
 
 The objective is to preserve the emotional weight of Hardcore mode while replacing permanent removal from the server with a system of exile and renewal.
 
@@ -70,7 +70,7 @@ A death should feel like the end of a life rather than the end of a character.
 
 # Relationship to Anarchy Servers
 
-Hardcore Exile embraces many principles commonly associated with anarchy servers:
+Samsara embraces many principles commonly associated with anarchy servers:
 
 * Minimal administrative intervention.
 * Player-driven history.
@@ -82,11 +82,21 @@ However, the project also seeks to preserve the integrity of the world itself.
 
 The server should encourage experimentation, automation, exploration, and player freedom while protecting the core systems that make distance, discovery, and survival meaningful.
 
+The line this draws is the one the server states to players in `/help rules`:
+
+> Administration governs the integrity of the server. Players govern the world.
+
+Conflict inside the world — killing, stealing, raiding, trapping, betrayal, territorial disputes — is
+gameplay, and no administrator will undo it. What is enforced sits outside the world: attacks on the
+host or the software, conduct that Minecraft's own rules and Microsoft's Community Standards already
+prohibit, and abuse that makes chat unusable. Technical Minecraft carries a strong presumption of
+being allowed; something is only an exploit here if it attacks the server rather than the game.
+
 ---
 
 # Plugin Goals
 
-The Hardcore Exile plugin exists to enforce the gameplay rules and systems that define the server.
+The Samsara plugin exists to enforce the gameplay rules and systems that define the server.
 
 Its purpose is to:
 
@@ -98,15 +108,19 @@ Its purpose is to:
 
 The plugin should be considered the authoritative source of gameplay behavior.
 
+It is also the source of the server's presentation: the help topics that let a player look the
+server up rather than learn it by dying. The server list entry is left to `server.properties`. See
+[Paper Plugin/README.md](Paper%20Plugin/README.md).
+
 ---
 
 # Resource Pack Goals
 
-The Hardcore Exile Resource Pack exists to communicate the identity of the server through visual presentation.
+The Samsara Resource Pack exists to communicate the identity of the server through visual presentation.
 
 Its purpose is to:
 
-* Reinforce the atmosphere of Hardcore Exile.
+* Reinforce the atmosphere of Samsara.
 * Present players with a unique visual identity.
 * Communicate that this is not a standard survival server.
 * Support immersion without altering gameplay mechanics.
@@ -117,7 +131,7 @@ The resource pack should make the world feel consistent with the themes of conse
 
 # Long-Term Vision
 
-The long-term goal of Hardcore Exile is to create a persistent world where stories emerge naturally from player actions.
+The long-term goal of Samsara is to create a persistent world where stories emerge naturally from player actions.
 
 The project aims to encourage:
 
@@ -130,6 +144,6 @@ The project aims to encourage:
 
 Players should feel that every structure, road, tunnel, cache, and coordinate has value because the world continues to exist long after the life that created it has ended.
 
-Hardcore Exile is not a game about preventing death.
+Samsara is not a game about preventing death.
 
 It is a game about living with its consequences.
