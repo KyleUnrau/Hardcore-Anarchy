@@ -155,7 +155,7 @@ paths:
   messages:
     join: ""
     quit: ""
-    departure: "&e%player%'s left their path"
+    departure: "&e%player% left their path"
     arrival: "&e%player% entered their path"
 
 # Who can see whom.

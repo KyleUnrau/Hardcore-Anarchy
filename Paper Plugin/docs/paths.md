@@ -160,7 +160,7 @@ paths:
   messages:
     join: ""                                         # vanilla's, by default
     quit: ""                                         # vanilla's, by default
-    departure: "&e%player%'s left their path"        # where they were
+    departure: "&e%player% left their path"          # where they were
     arrival: "&e%player% entered their path"         # where they now are
 ```
 

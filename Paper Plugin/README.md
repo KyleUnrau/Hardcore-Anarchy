@@ -99,7 +99,7 @@ paths:
   messages:
     join: ""    # empty leaves connecting and disconnecting to vanilla, translations included
     quit: ""
-    departure: "&e%player%'s left their path"
+    departure: "&e%player% left their path"
     arrival: "&e%player% entered their path"
 
 # How far the End portal activation roar carries, in blocks (0 silences it)

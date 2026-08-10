@@ -93,7 +93,7 @@ public class PathConfig {
         return new PathConfig(enabled, 5, DEFAULT_PATH_NAME, 120,
             "",
             "",
-            "&e%player%'s left their path",
+            "&e%player% left their path",
             "&e%player% entered their path");
     }
 
